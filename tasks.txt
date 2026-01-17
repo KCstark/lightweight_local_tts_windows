@@ -263,5 +263,13 @@ volume, speed
 
 max chat length
 
-
+---------------------------------------------------------------------------------------------
+- get app working for loading voices creating necessary directories, installing modules, connecting to twitch
+login 2 ways anonymous & login normal, read chat send chat & convert to sound directly
+V0.5 done------------
+now
+1- add tweak parameters to voices
+2- add download default voices & stuff with my custom voice to some way maybe some link to that meh..
+3- UI first for exe version, then maybe web version
+V1 done--------------
 

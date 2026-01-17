@@ -1,0 +1,184 @@
+PIPER tts STUFFFFFFF
+
+https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/CLI.md
+
+collab to train the model for new voices:
+https://colab.research.google.com/drive/1X5K2gKoA8661u1pgdmY8gG6X6s57Qjmi#scrollTo=Y37QtlLmPuqT
+
+dataset:
+https://huggingface.co/datasets/simon3000/genshin-voice/viewer/default/train?q=raiden
+
+running:
+python -m piper -m lisa -f test.wav --'Hmm... You do have strange tastes. If this is your way of saying you want to be my knight in shining armor, Id rather you just say the words instead, Oh yes why not :)'
+
+ok when running server:
+python -m piper.http_server -m lisa
+
+to check the server works, this saves the output to the outFile location:
+(powershell mode shuoudl use curl for other terminals)
+
+Invoke-WebRequest  -Uri http://localhost:5000  -Method POST  -Headers @{ "Content-Type" = "application/json" }  -Body '{ "text": "This is a test. Id rather you just say the words instead, Oh yes why not :)" }' -OutFile D:\pipertts\testserver.wav
+
+curl -X POST -H 'Content-Type: application/json' -d '{ "text": "This is a test." }' -o test.wav localhost:5000
+
+
+Invoke-WebRequest  -Uri http://localhost:5000  -Method POST  -Headers @{ "Content-Type" = "application/json" }  -Body '{ "text": "This is a test. Id rather you just say the words instead, Oh yes why not :)" }' -OutFile D:\Users\kanis\Documents\VScode\TTSapp\output\testserver.wav
+
+
+can have multiple commands int header to change various parameters:
+The JSON data fields area:
+
+    text (required) - text to synthesize
+    voice (optional) - name of voice to use; defaults to -m <VOICE>
+    speaker (optional) - name of speaker for multi-speaker voices
+    speaker_id (optional) - id of speaker for multi-speaker voices; overrides speaker
+    length_scale (optional) - speaking speed; defaults to 1 (less the faster- 1.7-1.8 is perfect for lisa one)
+    noise_scale (optional) - speaking variability
+    noise_w_scale (optional) - phoneme width variability
+
+
+--------------------------------------------------------------------
+TWITCH STUFFFFFFF
+
+ok connecting to twitch so i got to know how to do that atlest for how to join a channel
+and get & send chat can do more stuff but later that.
+refrence::- https://dev.twitch.tv/docs/chat/irc/
+about authentication tho followed this blog & it works
+https://discuss.dev.twitch.com/t/anonymous-connection-to-twitch-chat/20392/7
+
+now about how to run that in terminal on windows:
+- first since its irc url cant curl it
+- then can telnet it but its not working for some reason
+- so installed ncat/npcap, that installed a gui as well (for now its useless cant figure out whats its used for lol)
+- so now this ncat can connect to irc url
+
+-oh well to connect to irc server 
+server: irc://irc.chat.twitch.tv:6667
+but cant just write it like this so use following command
+(well after installing tha ncat will be installed on system level if not for some reason
+go to C-programfiles-Npcap folder then open terminal there, otherwise just type following commands)
+-> ncat irc.chat.twitch.tv 6667
+so after this im connceted to twitch irc server but now i got two ways to auth
+one- anonymous
+two- just login (this is well :))
+there are a few commands depending on what i need the script to do can find more about them on
+the link above
+so ok going anonymys route needed to follow that blog above so read maybe..
+(this is not case insensitive so write how u want)
+-> PASS <any-random-string :)>
+-> NICK justinfan<any-number>
+after this should be able to connect to it, btw i dont know why its justin fan its just what it is......
+PASS is for password/oauth-Token
+NICK is for nickname(if i pick any other nickname it doesnt work)
+eg..
+Pass kajhvasjkvsjbvsvbjasv
+nick justinfan1222345
+:tmi.twitch.tv 001 justinfan1222345 :Welcome, GLHF!
+:tmi.twitch.tv 002 justinfan1222345 :Your host is tmi.twitch.tv
+:tmi.twitch.tv 003 justinfan1222345 :This server is rather new
+:tmi.twitch.tv 004 justinfan1222345 :-
+:tmi.twitch.tv 375 justinfan1222345 :-
+:tmi.twitch.tv 372 justinfan1222345 :You are in a maze of twisty passages, all alike.
+:tmi.twitch.tv 376 justinfan1222345 :>
+
+ok now for login flow(i just know about one of them rn, using a token generator one.
+there are more ways will think about them later)
+go here login & generate token and refreshtoken for your logined acc 
+https://twitchtokengenerator.com/
+
+now commands get following from the site first:
+ACCESS TOKEN
+REFRESH TOKEN 	
+connect to irc server
+-> PASS oauth:<ACCESS TOKEN>
+-> NICK <realusername of token account>
+eg..
+pass oauth:97yy1hifb273g39b
+nick KCst4rk
+:tmi.twitch.tv 001 KCst4rk :Welcome, GLHF!
+:tmi.twitch.tv 002 KCst4rk :Your host is tmi.twitch.tv
+:tmi.twitch.tv 003 KCst4rk :This server is rather new
+:tmi.twitch.tv 004 KCst4rk :-
+:tmi.twitch.tv 375 KCst4rk :-
+:tmi.twitch.tv 372 KCst4rk :You are in a maze of twisty passages, all alike.
+:tmi.twitch.tv 376 KCst4rk :>
+
+hmm i dint see how to do the refresh token flow.. well will update here later
+----------- ADD refresh token flow
+
+ok now need to get some capibility from twitch 
+-> CAP REQ :twitch.tv/membership twitch.tv/tags twitch.tv/commands
+each of them do diffrent things just go read on the link above
+we have some cap now so need to join a channel
+-> JOIN #<channelname>
+eg...
+join #KCst4rk
+:justinfan1222345!justinfan1222345@justinfan1222345.tmi.twitch.tv JOIN #kcst4rk
+@emote-only=0;followers-only=-1;r9k=0;room-id=614550000;slow=0;subs-only=0 :tmi.twitch.tv ROOMSTATE #kcst4rk
+:justinfan1222345.tmi.twitch.tv 353 justinfan1222345 = #kcst4rk :kcst4rk streamelements
+:justinfan1222345.tmi.twitch.tv 353 justinfan1222345 = #kcst4rk :justinfan1222345
+:justinfan1222345.tmi.twitch.tv 366 justinfan1222345 #kcst4rk :End of /NAMES list
+
+so for anonymus flow cant send any message in chat but can recive it
+message readingggggggggg
+eg..
+@badge-info=subscriber/8;badges=broadcaster/1,subscriber/0,twitch-recap-2023/1;client-nonce=ea01643a79ef4a94bf7af5f9c89111fa;color=#00FF7F;display-name=KCst4rk;emotes=;first-msg=0;flags=;
+id=dc4305b5-cdc8-48f1-9ff4-d4bdee9142dc;mod=0;returning-chatter=0;room-id=614550000;subscriber=1;
+tmi-sent-ts=1768647277815;turbo=0;user-id=614550000;user-type= :kcst4rk!kcst4rk@kcst4rk.tmi.twitch.tv 
+PRIVMSG #kcst4rk :tesing from chat interface
+
+so need to format this shit last to get the message (the end part)
+
+to keep the connection alive 2 ways
+the bot should send ping
+-> ping
+return: PONG :tmi.twitch.tv
+else the server will send this 
+PING :tmi.twitch.tv
+then bot need to return this
+-> PONG <same thing the server pingedd>
+eg..
+PONG :tmi.twitch.tv
+
+also when someone joing the chat room it gets an output
+:laynetoo!laynetoo@laynetoo.tmi.twitch.tv JOIN #kcst4rk
+& when they leave this
+:laynetoo!laynetoo@laynetoo.tmi.twitch.tv PART #kcst4rk
+
+if need to manually leave a chatroom
+-> PART #<channel>,#<channel>
+(why more than one channel name? coz join more than one channel at one time & leave too
+but not handleing multiple of them rn so meh.....)
+eg..
+PART #KCst4rk
+:justinfan1222345!justinfan1222345@justinfan1222345.tmi.twitch.tv PART #kcst4rk
+
+ok now about sending message
+for sending use the command
+-> PRIVMSG #<channel name> :This is a sample message
+for emotes
+-> PRIVMSG #<channel name> :HeyGuys <3 PartyTime 
+eg..
+PRIVMSG #KCst4rk :This is a sample message
+
+well one more cap
+replying in chat 
+get the message id which we get then the mesage was read here above example:
+@badge-info=subscriber/8;badges=broadcaster/1,subscriber/0,twitch-recap-2023/1;client-nonce=ea01643a79ef4a94bf7af5f9c89111fa;color=#00FF7F;display-name=KCst4rk;emotes=;first-msg=0;flags=;
+id=dc4305b5-cdc8-48f1-9ff4-d4bdee9142dc;mod=0;returning-chatter=0;
+here id=dc4305b5-cdc8-48f1-9ff4-d4bdee9142dc is the mesage id
+-> @reply-parent-msg-id=dc4305b5-cdc8-48f1-9ff4-d4bdee9142dc PRIVMSG <channelname> :absolutely!
+eg..
+@reply-parent-msg-id=dc4305b5-cdc8-48f1-9ff4-d4bdee9142dc PRIVMSG #KCst4rk :absolutely!
+
+
+ok this is enough for now lets add this then will see if needed more tho i doubt :)
+all of the above stuff alredy has a built in module... so dont have to implement it 
+using this : https://pypi.org/project/twitch-chat-irc/
+well will make custom implementation later
+
+----------------------------------------------------------------------------------
+{'badge-info': '', 'badges': 'moderator/1', 'color': '#0000FF', 'display-name': 'NotAChatBot_', 'emotes': '',
+ 'first-msg': '0', 'flags': '', 'id': '6a2c47c1-5551-4e94-9d05-8cee9d6d2dd2', 'mod': '1', 'returning-chatter': '0',
+  'room-id': '116995434', 'subscriber': '0', 'tmi-sent-ts': '1768658583150', 'turbo': '0', 'user-id': '1306110970',
+   'user-type': 'mod', 'message': '[YouTube] @QwertyAbcd-p6k3z: haha'}
