@@ -19,6 +19,8 @@ import subprocess
 import requests 
 import time
 import simpleaudio as sa
+import threading
+from twitch_chat_irc import twitch_chat_irc
 from datetime import datetime 
 from pathlib import Path
 
@@ -27,18 +29,22 @@ class PiperScript:
     def __init__(self):
         self.script_directory = Path(__file__).parent.resolve()
         self.server_url="http://localhost:5000"
+        self.twitch_token_generator_url="https://twitchtokengenerator.com/"
+        self.twitch_irc_url="irc://irc.chat.twitch.tv:6667"
+        self.voice="default_voice"
         print(f"Current directory : {self.script_directory}")
         print("Press ctrl+c to exit")
 
         self.check_python()
         self.install_piper()
         self.handle_voices() #add a download more open voice later here
-        print("Wating 5sec to test..")
-        time.sleep(5)
+        print("Wating 3sec to test..")
+        time.sleep(3)
         self.test_server()
+        self.connect_app()
         
         
-
+        
     def check_python(self):
         ver = sys.version_info
         print(f"Python version {ver.major}.{ver.minor} found")
@@ -49,27 +55,7 @@ class PiperScript:
 
     def install_piper(self):
         package_name = "piper-tts"
-
-        try:
-            print("Checking if piper-tts is installed...")
-            subprocess.check_output(
-                [sys.executable, "-m", "pip", "show", package_name],
-                stderr=subprocess.STDOUT
-            )
-            print("piper-tts is already installed")
-        except subprocess.CalledProcessError:
-            print(f"{package_name} is NOT installed, installing...")
-            try:
-                subprocess.check_output(
-                    # [sys.executable, "-m", "pip", "install", "--user", package_name],
-                    # stderr=subprocess.STDOUT
-                    [sys.executable, "-m", "pip", "install", package_name],
-                    stderr=subprocess.STDOUT #for venv version
-                )
-                print("piper-tts installed successfully")
-            except subprocess.CalledProcessError as e:
-                print(f"Error installing piper-tts:\n{e.output.decode()}")
-                sys.exit(1)
+        self.installation_checker(package_name)
 
     def handle_voices(self):
         voices_folder = self.script_directory / "voices"
@@ -92,7 +78,7 @@ class PiperScript:
         voice_files.sort()
 
         if not voice_files:
-            print("No voices found! Please put .onnx files in 'voices' folder under there name.")
+            print("No voices found! Please add .onnx files in 'voices' folder under there name.")
             return
 
         for idx, file in enumerate(voice_files, start=1):
@@ -116,7 +102,7 @@ class PiperScript:
             print("output folder dont exists, creating..")
             self.script_directory.mkdir(exist_ok=True)
         payload = {
-        "text": "This is a testttttttttt-1 2 3 4 5 6 7 8 hehehe. I'd rather you just say the words instead, Oh yes why not :)"
+        "text": f"Hello! I'm {self.voice}, happy to meet you!"
         }
         output_file = out_dirr / "testserver.wav"
         
@@ -125,6 +111,159 @@ class PiperScript:
             self.playWav(output_file)
         else:
             return
+    
+    def connect_app(self):
+        appMap={1:'Twitch',2:'YouTube'}
+        print(f"Avaiable apps... \n{appMap}")
+    
+        while True:
+            try:
+                choice = int(input("Enter the app you want to connect to: #"))
+                appMap[choice]
+                break
+            except (ValueError, KeyError):
+                print("Invalid selection, try again.")
+        print(f"Selected: {appMap[choice]}")
+        
+        match (choice):
+            case 1: 
+                self.twitch_setup()
+            case _:
+                print(f"Some error in selection: {appMap[choice]}, or not implementaion in progress..")
+        
+        
+        
+    def twitch_setup(self):
+        print("Running Twitch setup...")
+        #  pip install twitch-chat-irc
+        self.installation_checker("twitch-chat-irc")
+        
+        # either login or just type the channel name to acccess chat
+        loginOptions={1:'annon(only read access)',2:'token (full access to chat)'}
+        print(loginOptions)
+        while True:
+            try:
+                choose=int(input("login choice: #"))
+                loginOptions[choose]
+                break
+            except (ValueError, KeyError):
+                print("Invalid selection, try again.")
+        # https://pypi.org/project/twitch-chat-irc/
+        connection=self.twitchLogin(choose,loginOptions)
+        while True:
+            channel_name=input("Enter the channel name you want to connect to: ")
+            # try:
+            self.twitch_message_handler(connection,channel_name,choose)
+            # except KeyboardInterrupt:
+                # print(f"\nDetected Ctrl+C, stopping...")
+            choiceChannel=input(f"Disconnecting...! Want to change channels? y/n")
+            if choiceChannel.lower()!= "y":                
+                break
+
+        # Close connection
+        print(f"Closing twitch connection...")
+        connection.close_connection()
+        
+    def twitch_message_handler(self,connection,channel_name,choice):
+        print(f"Starting new socket, listenting to all the new messages now, \n(ctrl+c to stop socket)")
+        stopping_event=threading.Event()
+        def listener():
+            # Receiving messages
+            # creates a socket to listen message will break on ctrl+c only
+            while not stopping_event.is_set():
+                try:
+                    connection.listen(channel_name,
+                                      on_message=lambda msg: self.process_message(msg,"Twitch"))
+                except Exception as e:
+                    # this will end with an error & thats fine
+                    print(f"Listner socket breaking... \n{e}")
+                    break
+        def writer():
+            # Send a message
+            while True:
+                message=input("('+stop-' to disconnect) \nEnter message to send: ")
+                if message=="+stop-":
+                    stopping_event.set()
+                    connection.send(channel_name,"/part")
+                    break
+                connection.send(channel_name,message)
+        
+        listenerT=threading.Thread(target=listener,daemon=True)
+        listenerT.start()
+        if choice!=1:
+            writer()
+        else:
+            message=input("'+stop-' to disconnect: ")
+            if message=="+stop-":
+                stopping_event.set()
+            
+        
+    def  process_message(self,message,source):
+        print(f"\nFrom {source}:{message['message']}")
+        self.playmessage(message['message'],source)
+        # self.playmessage("abac test test",source)
+        
+    
+    def playmessage(self,message,source):
+        out_dirr=self.script_directory/"output"
+        if not out_dirr.exists():
+            print("output folder dont exists, creating..")
+            self.script_directory.mkdir(exist_ok=True)
+        payload = {
+        "text": message
+        }
+        output_file = out_dirr / f"{source}-chat.wav"
+        
+        #playing on the server
+        if self.apiCall(output_file,payload):
+            self.playWav(output_file)
+        else:
+            return
+        
+        
+    
+    def twitchLogin(self,choice,loginOptions):
+        print(f"login mode: {loginOptions[choice]}")
+        outh_token= "random_string_hehe" 
+        refresh_token= "random_string_hehe"
+        nickname= "justinfan123456"
+        if choice!=1:
+            print(f"Go {self.twitch_token_generator_url} & get your tokens with 'chat:read' and 'chat:edit' access minimum!")
+            outh_token=input("Enter ACCESS TOKEN: ")
+            refresh_token=input("Enter REFRESH TOKEN: ")
+            nickname=input("Enter Your nickname(make sure its same as the account you used to get the token): ")
+        
+        # connect to twitch irc chat now
+        print(f"Connecting to twitch...")
+        connection = twitch_chat_irc.TwitchChatIRC()
+        connection = twitch_chat_irc.TwitchChatIRC(nickname,outh_token)
+        
+        print(f"Twitch connection created!")
+        return connection
+        
+        
+    def installation_checker(self,package_name):
+        try:
+            print(f"Checking if {package_name} is installed...")
+            subprocess.check_output(
+                [sys.executable, "-m", "pip", "show", package_name],
+                stderr=subprocess.STDOUT
+            )
+            print(f"{package_name} is already installed")
+        except subprocess.CalledProcessError:
+            print(f"{package_name} is NOT installed, installing...")
+            try:
+                subprocess.check_output(
+                    # [sys.executable, "-m", "pip", "install", "--user", package_name],
+                    # stderr=subprocess.STDOUT
+                    [sys.executable, "-m", "pip", "install", package_name],
+                    stderr=subprocess.STDOUT #for venv version
+                )
+                print(f"{package_name} installed successfully")
+            except subprocess.CalledProcessError as e:
+                print(f"Error installing {package_name}:\n{e.output.decode()}")
+                sys.exit(1)
+        
         
     def apiCall(self,output_file_path,payload):
         print(f"Calling server api...")
@@ -154,6 +293,7 @@ class PiperScript:
     def piperServer(self, selected_voice_folder, voices_folder):
         print("Starting piper server with:")
         print(f"Voice: {selected_voice_folder.name}")
+        self.voice={selected_voice_folder.name}
         print(f"Folder: {voices_folder}")
         #start piper server here
         # python -m piper.http_server -m lisa
