@@ -50,9 +50,12 @@ class mainApp:
         self.check_python()
         self.install_piper()
         self.handle_voices() #add a download more open voice later here
-        print("Wating 4sec to test..")
-        time.sleep(4)
-        self.test_server()
+        def testvo():
+            print("Wating 4sec to test..")
+            time.sleep(4)
+            self.test_server()
+        testvoT=threading.Thread(target=testvo,daemon=True)
+        testvoT.start()
         self.connect_app()
         
         

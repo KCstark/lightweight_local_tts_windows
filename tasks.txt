@@ -268,8 +268,19 @@ max chat length
 login 2 ways anonymous & login normal, read chat send chat & convert to sound directly
 V0.5 done------------
 now
+
+bug-- voice get struck when a lot of chat in small time. cant figure it yet. maybe rate limit fomr twitch side maybe not
+tried to replace twitchio library wasnt able to add it. so will think about it later lets get v1 done first
+
 1- add tweak parameters to voices
+
 2- add download default voices & stuff with my custom voice to some way maybe some link to that meh..
+
 3- UI first for exe version, then maybe web version
+
 V1 done--------------
+
+1. add neuTTS as an option other than pipertts, (tho need to learn about it more)
+https://github.com/neuphonic/neutts
+
 
